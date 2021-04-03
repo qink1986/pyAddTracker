@@ -2,7 +2,7 @@
 Author: qink-dell
 Date: 2021-04-03 10:26:42
 LastEditors: qink-dell
-LastEditTime: 2021-04-04 00:22:12
+LastEditTime: 2021-04-04 00:51:05
 Description: 
 '''
 
@@ -22,7 +22,10 @@ class Torrent(object):
         self.status = status
     
 def getTorrent(user,password,host,filePath):
-    command = f'"{filePath}" "{host}" --auth={user}:{password} -l'
+    if user:
+        command = f'"{filePath}" "{host}" --auth={user}:{password} -l'
+    else:
+        command = f'"{filePath}" "{host}" -l'
     lstTorrents = ''
 
     ret = subprocess.run(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,encoding="utf-8",timeout=1)
@@ -46,22 +49,30 @@ def getTracker():
         trackers = [i.strip("'") for i in str(f.read())[1:].split("\\n") if i not in ("","'")]
     return trackers
 
-def addTrackers(user,password,host,filePath,lstTorrents,trackers):
-    for torrent in lstTorrents:
-        if torrent.status not in ("Stop","Finished","Seeding"):
-            for tracker in trackers:
-                command = f'"{filePath}" "{host}"  --auth={user}:{password} --torrent "{torrent.tid}" -td "{tracker}"'
-                ret = subprocess.run(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,encoding="utf-8",timeout=1)
-                if ret.returncode == 0:
-                    print(f'add tracker {tracker} to {torrent.name} successed')
-                else:
-                    print(f'add tracker {tracker} to {torrent.name} failed')
-            print(f'add tracker {tracker} to {torrent.name} done')
+def addTrackers(user,password,host,filePath,lstTorrents):
+    availableTorrents = [torrent for torrent in lstTorrents if torrent.status not in ("Stop","Finished","Seeding")]
+    trackers = ''
+    if len(availableTorrents) > 0:
+        trackers = getTracker()
+
+    for torrent in availableTorrents:
+        for tracker in trackers:
+            if user:
+                command = f'"{filePath}" "{host}" --auth={user}:{password} --torrent "{torrent.tid}" -td "{tracker}"'
+            else:
+                command = f'"{filePath}" "{host}" --torrent "{torrent.tid}" -td "{tracker}"'
+            ret = subprocess.run(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,encoding="utf-8",timeout=1)
+            if ret.returncode == 0:
+                print(f'add tracker {tracker} to {torrent.name} successed')
+            else:
+                print(f'add tracker {tracker} to {torrent.name} failed')
+        print(f'add tracker {tracker} to {torrent.name} done')
+    return
 
 def main(argv):
+    user = ''
+    password = ''
     filePath = 'transmission-remote'
-    user = 'admin'
-    password = 'admin'
     host = 'localhost'
     isSetUser = False
     
@@ -92,8 +103,7 @@ def main(argv):
         password = getpass()
 
     lstTorrents = getTorrent(user,password,host,filePath)
-    trackers = getTracker()
-    addTrackers(user,password,host,filePath,lstTorrents, trackers)
+    addTrackers(user,password,host,filePath,lstTorrents)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
