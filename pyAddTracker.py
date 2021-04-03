@@ -2,14 +2,14 @@
 Author: qink-dell
 Date: 2021-04-03 10:26:42
 LastEditors: qink-dell
-LastEditTime: 2021-04-04 00:02:22
+LastEditTime: 2021-04-04 00:22:12
 Description: 
 '''
 
 import subprocess
 import os
 import sys, getopt
-import requests
+import urllib.request
 from getpass import getpass
 
 class Torrent(object):
@@ -42,10 +42,8 @@ def extractTorrents(torrentMsg):
 
 def getTracker():
     url = "https://raw.githubusercontent.com/ngosang/trackerslist/master/trackers_all.txt"
-    f = requests.get(url)
-    with open("trackers_all.txt", "wb"):
-        trackers = [i.strip("'") for i in str(f.content)[1:].split("\\n") if i not in ("","'")]
-    os.remove("trackers_all.txt")
+    with urllib.request.urlopen(url) as f:
+        trackers = [i.strip("'") for i in str(f.read())[1:].split("\\n") if i not in ("","'")]
     return trackers
 
 def addTrackers(user,password,host,filePath,lstTorrents,trackers):
