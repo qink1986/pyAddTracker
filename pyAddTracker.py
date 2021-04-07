@@ -2,7 +2,7 @@
 Author: qink-dell
 Date: 2021-04-03 10:26:42
 LastEditors: qink-mac
-LastEditTime: 2021-04-07 22:10:04
+LastEditTime: 2021-04-07 22:26:01
 Description: 
 '''
 
@@ -190,11 +190,21 @@ def getTracker():
     return trackers
 
 def addTrackers(user,password,host,filePath,lstTorrents):
+    if len(lstTorrents) == 0:
+        return
+        
+    print(f'found torrents:')
+    print(f'ID STATUS NAME')
+    for torrent in lstTorrents:
+        print(f'{torrent.tid} {torrent.status} {torrent.name}')
+    print("")
+    
     availableTorrents = [torrent for torrent in lstTorrents if torrent.status not in ("Stop","Finished","Seeding")]
-    trackers = ''
-    if len(availableTorrents) > 0:
-        trackers = getTracker()
 
+    if len(availableTorrents) == 0:
+        return
+
+    trackers = getTracker()
     for torrent in availableTorrents:
         print(f'add trackers to {torrent.name}: ')
         for tracker in trackers:
@@ -204,10 +214,11 @@ def addTrackers(user,password,host,filePath,lstTorrents):
                 command = f'"{filePath}" "{host}" --torrent "{torrent.tid}" -td "{tracker}"'
             ret = subprocess.run(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,encoding="utf-8",timeout=1)
             if ret.returncode == 0:
-                print(f'add tracker {tracker} -> successed!')
+                print(f'add {tracker} -> successed!')
             else:
-                print(f'add tracker {tracker} -> failed!')
+                print(f'add {tracker} -> failed!')
         print(f'add trackers to {torrent.name} done!')
+        print("")
     return
 
 def main(argv):
