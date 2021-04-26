@@ -1,8 +1,8 @@
 '''
 Author: qink-dell
 Date: 2021-04-03 10:26:42
-LastEditors: qink-mac
-LastEditTime: 2021-04-07 22:26:01
+LastEditors: qink-dell
+LastEditTime: 2021-04-26 12:09:17
 Description: 
 '''
 
@@ -16,10 +16,10 @@ class Torrent(object):
     tid = ''
     name = ''
     status = ''
-    def __init__(self, tid, name, status):
+    def __init__(self, tid, status, name):
         self.tid = tid
-        self.name = name
         self.status = status
+        self.name = name
     
 def getTorrent(user,password,host,filePath):
     if user:
@@ -37,10 +37,16 @@ def getTorrent(user,password,host,filePath):
     
 def extractTorrents(torrentMsg):
     lstTorrents = []
-    for line in torrentMsg.strip(" ").split("\n"):
+    titleDict = {}
+    torrentMsg = torrentMsg.split("\n")
+    for line in torrentMsg:
         info = [i for i in line.strip(" ").split(" ") if i != ""]
-        if len(info) > 0 and info[0] not in ('ID','Sum:'):
-            lstTorrents.append(Torrent(info[0], info[-1], info[-2]))
+        if len(info) > 0 and info[0] in ('ID'):
+            for titie in info:
+                titleDict[titie] = line.find(titie)
+            continue
+        if len(info) > 0 and len(titleDict) > 0 and info[0] != 'Sum:':
+                lstTorrents.append(Torrent(line[0:titleDict['Done']].strip(" "), line[titleDict['Status']:titleDict['Name']].strip(" "), line[titleDict['Name']:].strip(" ")))
     return lstTorrents
 
 def getTracker():
@@ -212,10 +218,14 @@ def addTrackers(user,password,host,filePath,lstTorrents):
                 command = f'"{filePath}" "{host}" --auth={user}:{password} --torrent "{torrent.tid}" -td "{tracker}"'
             else:
                 command = f'"{filePath}" "{host}" --torrent "{torrent.tid}" -td "{tracker}"'
-            ret = subprocess.run(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,encoding="utf-8",timeout=1)
-            if ret.returncode == 0:
-                print(f'add {tracker} -> successed!')
-            else:
+                
+            try:
+                ret = subprocess.run(command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,encoding="utf-8",timeout=1)
+                if ret.returncode == 0:
+                    print(f'add {tracker} -> successed!')
+                else:
+                    print(f'add {tracker} -> failed!')
+            except:
                 print(f'add {tracker} -> failed!')
         print(f'add trackers to {torrent.name} done!')
         print("")
